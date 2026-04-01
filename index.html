@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Expense Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+:root {
+    --bg: #f4f6f9;
+    --card: white;
+    --text: black;
+}
+
+.dark {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: white;
+}
+
+body {
+    margin: 0;
+    font-family: Arial;
+    display: flex;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    height: 100vh;
+    background: #1e293b;
+    color: white;
+    padding: 20px;
+}
+
+.sidebar button {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    background: none;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.sidebar button:hover {
+    background: #334155;
+}
+
+/* Main */
+.main {
+    flex: 1;
+    padding: 20px;
+}
+
+/* FIXED CARD */
+.card {
+    background: var(--card);
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 10px;
+
+    transition: all 0.3s ease;  /* ✅ added */
+}
+
+.hidden {
+    display: none;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+/* Warning */
+#warning {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ef4444;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+}
+
+/* Toast */
+#toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #10b981;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+}
+
+button.action {
+    background: #3b82f6;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="toast"></div>
+<div id="warning"></div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>💰 Tracker</h2>
+    <button onclick="show('auth')">Login/Register</button>
+    <button onclick="show('expense')">Add Expense</button>
+    <button onclick="show('dashboard')">Dashboard</button>
+    <button onclick="show('budget')">Budget</button>
+    <button onclick="show('chart')">Chart</button>
+    <button id="themeBtn" onclick="toggleTheme()">🌙 Dark Mode</button>
+    <button onclick="logout()">🚪 Logout</button>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+<p id="user_display"></p>
+
+<div id="auth" class="card">
+    <h2>Register</h2>
+    <input id="name" placeholder="Name">
+    <input id="email" placeholder="Email">
+    <input id="password" placeholder="Password">
+    <button class="action" onclick="register()">Register</button>
+
+    <h2>Login</h2>
+    <input id="login_email" placeholder="Email">
+    <input id="login_password" placeholder="Password">
+    <button class="action" onclick="login()">Login</button>
+</div>
+
+<div id="expense" class="card hidden">
+    <h2>Add Expense</h2>
+    <input id="amount" placeholder="Amount">
+    <input id="category" placeholder="Category">
+    <input id="date" type="date">
+    <button class="action" onclick="addExpense()">Add Expense</button>
+</div>
+
+<div id="dashboard" class="card hidden">
+    <h2>Dashboard</h2>
+    <button class="action" onclick="loadDashboard()">Load</button>
+    <p id="total_expense"></p>
+    <p id="total_count"></p>
+</div>
+
+<div id="budget" class="card hidden">
+    <h2>Budget</h2>
+    <input id="budget_amount" placeholder="Monthly Budget">
+    <button class="action" onclick="setBudget()">Save</button>
+    <button class="action" onclick="loadBudget()">View</button>
+    <p id="budget_info"></p>
+</div>
+
+<div id="chart" class="card hidden">
+    <h2>Charts</h2>
+    <button class="action" onclick="loadChart()">Show</button>
+    <canvas id="expenseChart"></canvas>
+    <canvas id="barChart"></canvas>
+</div>
+
+</div>
+
+<script>
+
+let currentUserId = null;
+
+// FIXED NAVIGATION
+function show(section) {
+    document.querySelectorAll('.card').forEach(c => {
+        c.classList.add('hidden');
+    });
+
+    document.getElementById(section).classList.remove('hidden');
+}
+
+// theme
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+
+    themeBtn.innerText = document.body.classList.contains("dark")
+        ? "☀️ Light Mode"
+        : "🌙 Dark Mode";
+}
+
+// toast
+function notify(msg) {
+    toast.innerText = msg;
+    toast.style.display = "block";
+    setTimeout(() => toast.style.display = "none", 2000);
+}
+
+// warning
+function showWarning(msg) {
+    warning.innerText = msg;
+    warning.style.display = "block";
+    setTimeout(() => warning.style.display = "none", 2000);
+}
+
+// logout
+function logout() {
+    currentUserId = null;
+    user_display.innerText = "";
+    notify("Logged out");
+}
+
+// register
+function register() {
+    fetch("http://localhost/expense-tracker/backend/register.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            name: name.value,
+            email: email.value,
+            password: password.value
+        })
+    }).then(res => res.text()).then(notify);
+}
+
+// login
+function login() {
+    fetch("http://localhost/expense-tracker/backend/login.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            email: login_email.value,
+            password: login_password.value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            currentUserId = data.user_id;
+            user_display.innerText = "👋 Welcome, " + data.name;
+            notify("Login success");
+        } else {
+            notify("Invalid credentials");
+        }
+    });
+}
+
+// expense
+function addExpense() {
+    if (!currentUserId) return showWarning("Please login first");
+
+    fetch("http://localhost/expense-tracker/backend/add_expense.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            user_id: currentUserId,
+            amount: amount.value,
+            category: category.value,
+            date: date.value
+        })
+    }).then(res => res.text()).then(notify);
+}
+
+// dashboard
+function loadDashboard() {
+    if (!currentUserId) return showWarning("Please login first");
+
+    fetch("http://localhost/expense-tracker/backend/dashboard.php?user_id=" + currentUserId)
+    .then(res => res.json())
+    .then(data => {
+        total_expense.innerText = "Total: ₹" + data.total;
+        total_count.innerText = "Entries: " + data.count;
+    });
+}
+
+// budget
+function setBudget() {
+    fetch("http://localhost/expense-tracker/backend/set_budget.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            user_id: currentUserId,
+            amount: budget_amount.value
+        })
+    }).then(res => res.text()).then(notify);
+}
+
+function loadBudget() {
+    fetch("http://localhost/expense-tracker/backend/get_budget.php?user_id=" + currentUserId)
+    .then(res => res.json())
+    .then(data => {
+        budget_info.innerText =
+            "Budget: ₹" + data.budget +
+            " | Spent: ₹" + data.spent +
+            " | Remaining: ₹" + data.remaining;
+    });
+}
+
+// chart
+function loadChart() {
+    fetch("http://localhost/expense-tracker/backend/chart.php?user_id=" + currentUserId)
+    .then(res => res.json())
+    .then(data => {
+
+        new Chart(document.getElementById("expenseChart"), {
+            type: "pie",
+            data: { labels: data.categories, datasets: [{ data: data.amounts }] }
+        });
+
+        new Chart(document.getElementById("barChart"), {
+            type: "bar",
+            data: { labels: data.categories, datasets: [{ data: data.amounts }] }
+        });
+
+    });
+}
+
+</script>
+
+</body>
+</html>
