@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Expense Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+:root {
+    --bg: #f4f6f9;
+    --card: white;
+    --text: black;
+}
+
+.dark {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: white;
+}
+
+body {
+    margin: 0;
+    font-family: Arial;
+    display: flex;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    height: 100vh;
+    background: #1e293b;
+    color: white;
+    padding: 20px;
+}
+
+.sidebar button {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    background: none;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.sidebar button:hover {
+    background: #334155;
+}
+
+/* Main */
+.main {
+    flex: 1;
+    padding: 20px;
+}
+
+.card {
+    background: var(--card);
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.hidden {
+    display: none;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+}
+
+/* Charts */
+.chart-box {
+    width: 400px;
+    height: 300px;
+    margin: 20px auto;
+}
+
+/* Warning */
+#warning {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ef4444;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+}
+
+/* Toast */
+#toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #10b981;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    display: none;
+}
+
+button.action {
+    background: #3b82f6;
+    color: white;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="toast"></div>
+<div id="warning"></div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h2>💰 Tracker</h2>
+    <button onclick="show('auth')">Login/Register</button>
+    <button onclick="show('expense')">Add Expense</button>
+    <button onclick="show('dashboard')">Dashboard</button>
+    <button onclick="show('budget')">Budget</button>
+    <button onclick="show('goal')">🎯 Savings Goal</button>
+    <button onclick="show('report')">📄 Monthly Report</button>
+    <button onclick="show('chart')">Chart</button>
+    <button id="themeBtn" onclick="toggleTheme()">🌙 Dark Mode</button>
+    <button onclick="logout()">🚪 Logout</button>
+    <button onclick="show('recurring')">🔄 Recurring Expenses</button>
+    <button onclick="show('heatmap')">🔥 Expense Heatmap</button>
+    <button onclick="show('receipt')">📸 Receipt Upload</button>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+<p id="user_display"></p>
+
+<div id="auth" class="card">
+    <h2>Register</h2>
+    <input id="name" placeholder="Name">
+    <input id="email" placeholder="Email">
+    <input id="password" placeholder="Password">
+    <button class="action" onclick="register()">Register</button>
+
+    <h2>Login</h2>
+    <input id="login_email" placeholder="Email">
+    <input id="login_password" placeholder="Password">
+    <button class="action" onclick="login()">Login</button>
+</div>
+
+<div id="expense" class="card hidden">
+    <h2>Add Expense</h2>
+    <input id="amount" placeholder="Amount">
+    <input id="category" placeholder="Category">
+    <input id="date" type="date">
+    <button class="action" onclick="addExpense()">Add Expense</button>
+</div>
+
+<div id="dashboard" class="card hidden">
+    <h2>Dashboard</h2>
+
+    <button class="action" onclick="loadDashboard()">
+        Load
+    </button>
+
+    <p id="total_expense"></p>
+    <p id="total_count"></p>
+
+    <hr>
+
+    <h3>💡 Smart Expense Insights</h3>
+
+    <div id="insightsBox">
+        No insights available
+    </div>
+
+    <hr>
+
+    <h3>📈 Smart Budget Forecast</h3>
+
+    <hr>
+
+    <h3>🏆 Financial Health Score</h3>
+
+       <div id="healthBox">
+        No score available
+    </div>
+
+    <h3>🤖 Financial Tips</h3>
+
+    <div id="tipsBox">
+    No tips available
+    </div>
+
+    <h3>🔄 Recurring Expenses</h3>
+
+<div id="dashboardRecurringBox">
+    No recurring expenses
+</div>
+
+    <div id="predictionBox">
+        No prediction available
+    </div>
+
+</div>
+
+<div id="budget" class="card hidden">
+    <h2>Budget</h2>
+    <input id="budget_amount" placeholder="Monthly Budget">
+    <button class="action" onclick="setBudget()">Save</button>
+    <button class="action" onclick="loadBudget()">View</button>
+    <p id="budget_info"></p>
+</div>
+
+<div id="goal" class="card hidden">
+    <h2>🎯 Savings Goal Tracker</h2>
+
+    <input id="goal_name"
+           placeholder="Goal Name (Laptop, Bike, Trip...)">
+
+    <input id="goal_amount"
+           type="number"
+           placeholder="Target Amount">
+
+    <button class="action" onclick="saveGoal()">
+        Save Goal
+    </button>
+
+    <button class="action" onclick="loadGoal()">
+        View Goal
+    </button>
+
+    <br><br>
+
+    <div id="goalBox">
+        No Goal Set
+    </div>
+</div>
+
+<div id="report" class="card hidden">
+
+    <h2>📄 Monthly Financial Report</h2>
+
+    <button
+        class="action"
+        onclick="loadReport()">
+        Generate Report
+    </button>
+
+    <button
+    class="action"
+    onclick="downloadPDF()">
+    📥 Download PDF Report
+    </button>
+
+    <div id="reportBox">
+
+        Click Generate Report
+
+    </div>
+
+</div>
+
+<div id="heatmap" class="card hidden">
+
+    <h2>🔥 Expense Heatmap</h2>
+
+    <button
+        class="action"
+        onclick="loadHeatmap()">
+        Load Heatmap
+    </button>
+
+    <br><br>
+
+    <div id="heatmapBox">
+        No heatmap data available
+    </div>
+
+</div>
+
+<div id="receipt" class="card hidden">
+
+    <h2>📸 Receipt Upload</h2>
+
+    <input
+        type="file"
+        id="receiptFile"
+    >
+
+    <br><br>
+
+    <button
+        class="action"
+        onclick="uploadReceipt()">
+        Upload Receipt
+    </button>
+
+    <button
+        class="action"
+        onclick="loadReceipts()">
+        View Receipts
+    </button>
+
+    <br><br>
+
+    <div id="receiptBox">
+
+        No receipts uploaded
+
+    </div>
+
+</div>
+
+<div id="chart" class="card hidden">
+    <h2>Charts</h2>
+    <button class="action" onclick="loadChart()">Show</button>
+
+    <div class="chart-box">
+        <canvas id="expenseChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <canvas id="barChart"></canvas>
+    </div>
+</div>
+
+
+<div id="recurring" class="card hidden">
+
+    <h2>🔄 Recurring Expenses</h2>
+
+    <input
+        id="rec_name"
+        placeholder="Expense Name"
+    >
+
+    <input
+        id="rec_amount"
+        placeholder="Amount"
+    >
+
+    <input
+        id="rec_category"
+        placeholder="Category"
+    >
+
+    <select id="rec_frequency">
+        <option value="Monthly">
+            Monthly
+        </option>
+    </select>
+
+    <button
+        class="action"
+        onclick="saveRecurring()"
+    >
+        Save
+    </button>
+
+    <button
+        class="action"
+        onclick="loadRecurring()"
+    >
+        View
+    </button>
+
+    <div id="recurringBox"></div>
+
+</div>
+
+</div>
+
+<script>
+
+let currentUserId = null;
+let pieChart = null;
+let barChartInstance = null;
+
+// navigation
+function show(section) {
+    document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
+    document.getElementById(section).classList.remove('hidden');
+}
+
+// theme
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+
+    themeBtn.innerText = document.body.classList.contains("dark")
+        ? "☀️ Light Mode"
+        : "🌙 Dark Mode";
+}
+
+// toast
+function notify(msg) {
+    toast.innerText = msg;
+    toast.style.display = "block";
+    setTimeout(() => toast.style.display = "none", 2000);
+}
+
+// warning
+function showWarning(msg) {
+    warning.innerText = msg;
+    warning.style.display = "block";
+    setTimeout(() => warning.style.display = "none", 2000);
+}
+
+function downloadPDF(){
+
+    window.open(
+        "http://localhost/expense-tracker/backend/export_pdf.php?user_id="
+        + currentUserId,
+        "_blank"
+    );
+
+}
+
+// logout
+function logout() {
+    currentUserId = null;
+    user_display.innerText = "";
+    notify("Logged out");
+}
+
+// register
+function register() {
+    fetch("http://localhost/expense-tracker/backend/register.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            name: name.value,
+            email: email.value,
+            password: password.value
+        })
+    }).then(res => res.text()).then(notify);
+}
+
+
+function loadRecurringSummary(){
+
+    fetch(
+        "http://localhost/expense-tracker/backend/recurring_summary.php?user_id="
+        + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        let html = "";
+
+        data.forEach(item=>{
+
+            html += `
+            <div style="
+                border:1px solid #ddd;
+                padding:10px;
+                margin-bottom:10px;
+                border-radius:8px;
+            ">
+
+            <b>${item.expense_name}</b><br>
+
+            ₹${item.amount}<br>
+
+            ${item.category}<br>
+
+            ${item.frequency}<br>
+
+            Added:
+            ${item.created_at}
+
+            </div>
+            `;
+
+        });
+
+        dashboardRecurringBox.innerHTML = html;
+
+    });
+
+}
+
+
+function loadTips(){
+
+    fetch(
+    "http://localhost/expense-tracker/backend/tips.php?user_id="
+    + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        tipsBox.innerHTML = "";
+
+        data.tips.forEach(t=>{
+
+            tipsBox.innerHTML +=
+            "<p>"+t+"</p>";
+
+        });
+
+    });
+
+}
+
+function loadHeatmap(){
+
+    if(!currentUserId)
+        return showWarning("Please login first");
+
+    fetch(
+        "http://localhost/expense-tracker/backend/heatmap.php?user_id="
+        + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        let html = `
+        <div style="
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+            gap:12px;
+        ">
+        `;
+
+        data.forEach(day=>{
+
+            let color = "#22c55e";
+
+            if(day.total > 1000)
+                color = "#eab308";
+
+            if(day.total > 3000)
+                color = "#ef4444";
+
+            html += `
+            <div style="
+                background:${color};
+                color:white;
+                padding:15px;
+                border-radius:10px;
+                text-align:center;
+            ">
+
+                <b>${day.date}</b>
+
+                <br><br>
+
+                ₹${day.total}
+
+            </div>
+            `;
+        });
+
+        html += "</div>";
+
+        heatmapBox.innerHTML = html;
+
+    });
+
+}
+
+// login
+function login() {
+    fetch("http://localhost/expense-tracker/backend/login.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            email: login_email.value,
+            password: login_password.value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            currentUserId = data.user_id;
+            user_display.innerText = "👋 Welcome, " + data.name;
+            notify("Login success");
+        } else {
+            notify("Invalid credentials");
+        }
+    });
+}
+
+// expense
+function addExpense() {
+    if (!currentUserId) return showWarning("Please login first");
+
+    fetch("http://localhost/expense-tracker/backend/add_expense.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            user_id: currentUserId,
+            amount: amount.value,
+            category: category.value,
+            date: date.value
+        })
+    }).then(res => res.text()).then(notify);
+}
+
+function saveRecurring(){
+
+    fetch(
+        "http://localhost/expense-tracker/backend/save_recurring.php",
+        {
+            method:"POST",
+
+            body:new URLSearchParams({
+
+                user_id:currentUserId,
+
+                name:rec_name.value,
+
+                amount:rec_amount.value,
+
+                category:rec_category.value,
+
+                frequency:rec_frequency.value
+
+            })
+        }
+    )
+    .then(res=>res.text())
+    .then(notify);
+
+}
+
+function loadRecurring(){
+
+    fetch(
+      "http://localhost/expense-tracker/backend/get_recurring.php?user_id="
+      + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        let html = "";
+
+        data.forEach(item=>{
+
+            html += `
+            <p>
+
+            ${item.expense_name}
+            -
+
+            ₹${item.amount}
+
+            (${item.frequency})
+
+            </p>
+            `;
+
+        });
+
+        recurringBox.innerHTML = html;
+
+    });
+
+}
+
+// dashboard
+function loadDashboard() {
+
+    if (!currentUserId)
+        return showWarning("Please login first");
+
+    fetch(
+        "http://localhost/expense-tracker/backend/dashboard.php?user_id="
+        + currentUserId
+    )
+    .then(res => res.json())
+    .then(data => {
+
+        total_expense.innerText =
+            "Total: ₹" + data.total;
+
+        total_count.innerText =
+            "Entries: " + data.count;
+
+        // NEW
+        loadInsights();
+        loadPrediction();
+        loadHealthScore();
+        loadTips();
+        loadRecurringSummary();
+
+    });
+
+}
+
+function loadInsights() {
+
+    fetch(
+        "http://localhost/expense-tracker/backend/insights.php?user_id="
+        + currentUserId
+    )
+    .then(res => res.json())
+    .then(data => {
+
+        insightsBox.innerHTML = `
+            <b>Highest Category:</b> ${data.category}<br>
+            <b>Amount:</b> ₹${data.amount}<br>
+            <b>Share:</b> ${data.percentage}%<br><br>
+
+            ⚠️ Consider reducing spending in
+            ${data.category}.
+        `;
+    });
+
+}
+
+function loadPrediction() {
+
+    fetch(
+        "http://localhost/expense-tracker/backend/prediction.php?user_id="
+        + currentUserId
+    )
+    .then(res => res.json())
+    .then(data => {
+
+        predictionBox.innerHTML = `
+
+        <b>Monthly Budget:</b>
+        ₹${data.budget}<br>
+
+        <b>Current Spending:</b>
+        ₹${data.spent}<br>
+
+        <b>Average Daily Spending:</b>
+        ₹${data.avgDaily}<br>
+
+        <b>Days Passed:</b>
+        ${data.daysPassed}/${data.daysInMonth}<br><br>
+
+        <b>Expected End-of-Month Spending:</b>
+        ₹${data.prediction}<br>
+
+        <b>Expected Remaining Budget:</b>
+        ₹${data.remainingForecast}<br><br>
+
+        <div style="
+            background:#ddd;
+            height:20px;
+            border-radius:10px;
+            overflow:hidden;
+        ">
+            <div style="
+                width:${Math.min(data.usagePercent,100)}%;
+                height:100%;
+                background:#3b82f6;
+            "></div>
+        </div>
+
+        <br>
+
+        Budget Used:
+        ${data.usagePercent}%<br><br>
+
+        <b>${data.status}</b>
+
+        `;
+
+    });
+
+}
+
+// budget
+function setBudget() {
+    fetch("http://localhost/expense-tracker/backend/set_budget.php", {
+        method: "POST",
+        body: new URLSearchParams({
+            user_id: currentUserId,
+            amount: budget_amount.value
+        })
+    }).then(res => res.text()).then(notify);
+}
+
+function loadBudget() {
+    fetch("http://localhost/expense-tracker/backend/get_budget.php?user_id=" + currentUserId)
+    .then(res => res.json())
+    .then(data => {
+        budget_info.innerText =
+            "Budget: ₹" + data.budget +
+            " | Spent: ₹" + data.spent +
+            " | Remaining: ₹" + data.remaining;
+    });
+}
+
+// charts (FIXED SIZE)
+function loadChart() {
+    if (!currentUserId) return showWarning("Please login first");
+
+    fetch("http://localhost/expense-tracker/backend/chart.php?user_id=" + currentUserId)
+    .then(res => res.json())
+    .then(data => {
+
+        if (pieChart) pieChart.destroy();
+        if (barChartInstance) barChartInstance.destroy();
+
+        pieChart = new Chart(document.getElementById("expenseChart"), {
+            type: "pie",
+            data: {
+                labels: data.categories,
+                datasets: [{ data: data.amounts }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        barChartInstance = new Chart(document.getElementById("barChart"), {
+            type: "bar",
+            data: {
+                labels: data.categories,
+                datasets: [{ data: data.amounts }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+    });
+}
+
+function loadHealthScore(){
+
+    fetch(
+      "http://localhost/expense-tracker/backend/health_score.php?user_id="
+      + currentUserId
+    )
+    .then(res => res.json())
+    .then(data => {
+
+        healthBox.innerHTML = `
+            <h2>${data.score}/100</h2>
+
+            <b>${data.status}</b><br><br>
+
+            Remaining Budget:
+            ₹${data.remaining}
+        `;
+    });
+
+}
+
+function saveGoal(){
+
+    if(!currentUserId)
+        return showWarning("Please login first");
+
+    fetch(
+        "http://localhost/expense-tracker/backend/save_goal.php",
+        {
+            method:"POST",
+            body:new URLSearchParams({
+
+                user_id:currentUserId,
+
+                goal_name:
+                document.getElementById("goal_name").value,
+
+                target_amount:
+                document.getElementById("goal_amount").value
+
+            })
+        }
+    )
+    .then(res=>res.text())
+    .then(notify);
+
+}
+
+function loadGoal(){
+
+    if(!currentUserId)
+        return showWarning("Please login first");
+
+    fetch(
+      "http://localhost/expense-tracker/backend/get_goal.php?user_id="
+      + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        goalBox.innerHTML = `
+
+        <h3>${data.goal}</h3>
+
+        <b>Target:</b>
+        ₹${data.target}<br>
+
+        <b>Current Savings:</b>
+        ₹${data.savings}<br><br>
+
+        <div style="
+            background:#ddd;
+            height:25px;
+            border-radius:15px;
+            overflow:hidden;
+        ">
+            <div style="
+                width:${Math.min(data.percentage,100)}%;
+                height:100%;
+                background:#10b981;
+            ">
+            </div>
+        </div>
+
+        <br>
+
+        <b>${data.percentage}% Completed</b>
+
+        `;
+
+    });
+
+}
+
+function loadReport(){
+
+    if(!currentUserId)
+        return showWarning("Please login first");
+
+    fetch(
+        "http://localhost/expense-tracker/backend/report.php?user_id="
+        + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        let rows = "";
+
+        data.transactions.forEach((t,index) => {
+
+            rows += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${t.date}</td>
+                <td>${t.category}</td>
+                <td>₹${t.amount}</td>
+            </tr>
+            `;
+
+        });
+
+        let recurringRows = "";
+
+        data.recurring.forEach((r,index) => {
+
+            recurringRows += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${r.expense_name}</td>
+                <td>₹${r.amount}</td>
+                <td>${r.category}</td>
+                <td>${r.frequency}</td>
+                <td>${r.created_at}</td>
+            </tr>
+            `;
+
+        });
+
+        reportBox.innerHTML = `
+
+        <h2>📄 Monthly Financial Report</h2>
+
+        <p>
+            <b>Generated On:</b>
+            ${data.generatedOn}
+        </p>
+
+        <hr>
+
+        <p><b>Total Expenses:</b> ₹${data.expenses}</p>
+
+        <p><b>Budget:</b> ₹${data.budget}</p>
+
+        <p><b>Remaining Budget:</b> ₹${data.remaining}</p>
+
+        <p>
+            <b>Highest Spending Category:</b>
+            ${data.topCategory}
+            (₹${data.topAmount})
+        </p>
+
+        <hr>
+
+        <h3>💸 Transaction History</h3>
+
+        <table
+            border="1"
+            cellpadding="8"
+            width="100%"
+            style="border-collapse:collapse;text-align:center;"
+        >
+
+        <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Amount</th>
+        </tr>
+
+        ${rows}
+
+        </table>
+
+        <br>
+
+        <b>Total Transactions:</b>
+        ${data.transactions.length}
+
+        <hr>
+
+        <h3>🔄 Recurring Expenses</h3>
+
+        <table
+            border="1"
+            cellpadding="8"
+            width="100%"
+            style="border-collapse:collapse;text-align:center;"
+        >
+
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Amount</th>
+            <th>Category</th>
+            <th>Frequency</th>
+            <th>Added On</th>
+        </tr>
+
+        ${recurringRows}
+
+        </table>
+
+        <br>
+
+        <b>Total Recurring Expenses:</b>
+        ${data.recurring.length}
+
+        `;
+
+    });
+
+}
+
+function uploadReceipt(){
+
+    if(!currentUserId)
+        return showWarning("Please login first");
+
+    let formData = new FormData();
+
+    formData.append(
+        "user_id",
+        currentUserId
+    );
+
+    formData.append(
+        "receipt",
+        receiptFile.files[0]
+    );
+
+    fetch(
+        "http://localhost/expense-tracker/backend/upload_receipt.php",
+        {
+            method:"POST",
+            body:formData
+        }
+    )
+    .then(res=>res.text())
+    .then(notify);
+
+}
+
+function loadReceipts(){
+
+    fetch(
+        "http://localhost/expense-tracker/backend/get_receipts.php?user_id="
+        + currentUserId
+    )
+    .then(res=>res.json())
+    .then(data=>{
+
+        let html = "";
+
+        data.forEach(r=>{
+
+html += `
+
+<div style="
+    border:1px solid #ddd;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+">
+
+    <img
+    src="http://localhost/expense-tracker/uploads/${r.file_name}"
+    width="150"
+    style="
+        border-radius:8px;
+        display:block;
+        margin-bottom:10px;
+    ">
+
+    <a
+    href="http://localhost/expense-tracker/uploads/${r.file_name}"
+    target="_blank">
+
+    ${r.file_name}
+
+    </a>
+
+    <br><br>
+
+    Uploaded:
+    ${r.uploaded_at}
+
+</div>
+
+`;
+
+        });
+
+        receiptBox.innerHTML = html;
+
+    });
+
+}
+
+</script>
+
+</body>
+</html>
